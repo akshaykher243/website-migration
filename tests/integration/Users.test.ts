@@ -1,20 +1,26 @@
-import { describe, it, expect, beforeEach } from '@jest/globals'
-import { getPayload } from '../helpers/getPayload'
-import { Payload } from 'payload'
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
+
+import { beforeEach, describe, expect, it } from '@jest/globals';
+import { Payload } from 'payload';
+
+import { getPayload } from '../helpers/getPayload';
 
 // Load test environment variables
-dotenv.config({ path: '.env.test' })
+dotenv.config({ path: '.env.test' });
 
-const TEST_PASSWORD = process.env.TEST_USER_PASSWORD || 'defaultTestPass123!'
-const WRONG_PASSWORD = process.env.TEST_WRONG_PASSWORD || 'defaultWrongPass123!'
+// object destructuring to get the environment variables
+const { TEST_PASSWORD, TEST_WRONG_PASSWORD } = process.env;
+
+if (!TEST_PASSWORD || !TEST_WRONG_PASSWORD) {
+  throw new Error('Test environment variables not set');
+}
 
 describe('Users Collection Integration', () => {
-  let payload: Payload
+  let payload: Payload;
 
   beforeEach(async () => {
-    payload = await getPayload()
-  })
+    payload = await getPayload();
+  });
 
   describe('Authentication Flow', () => {
     it('should create user and login successfully', async () => {
@@ -25,10 +31,10 @@ describe('Users Collection Integration', () => {
           email: 'integration-test@example.com',
           password: TEST_PASSWORD,
         },
-      })
+      });
 
-      expect(user).toBeDefined()
-      expect(user.email).toBe('integration-test@example.com')
+      expect(user).toBeDefined();
+      expect(user.email).toBe('integration-test@example.com');
 
       // Attempt login
       const response = await payload.login({
@@ -37,11 +43,11 @@ describe('Users Collection Integration', () => {
           email: 'integration-test@example.com',
           password: TEST_PASSWORD,
         },
-      })
+      });
 
-      expect(response.user).toBeDefined()
-      expect(response.token).toBeDefined()
-    })
+      expect(response.user).toBeDefined();
+      expect(response.token).toBeDefined();
+    });
 
     it('should fail to login with incorrect password', async () => {
       // Create test user
@@ -51,7 +57,7 @@ describe('Users Collection Integration', () => {
           email: 'wrong-pass@example.com',
           password: TEST_PASSWORD,
         },
-      })
+      });
 
       // Attempt login with wrong password
       try {
@@ -59,17 +65,17 @@ describe('Users Collection Integration', () => {
           collection: 'users',
           data: {
             email: 'wrong-pass@example.com',
-            password: WRONG_PASSWORD,
+            password: TEST_WRONG_PASSWORD,
           },
-        })
-        throw new Error('Login should have failed but succeeded')
+        });
+        throw new Error('Login should have failed but succeeded');
       } catch (error: any) {
         expect(error.message).toContain(
           'The email or password provided is incorrect.'
-        )
+        );
       }
-    })
-  })
+    });
+  });
 
   describe('User API Endpoints', () => {
     it('should allow access to me endpoint with authentication', async () => {
@@ -80,7 +86,7 @@ describe('Users Collection Integration', () => {
           email: 'me-endpoint@example.com',
           password: TEST_PASSWORD,
         },
-      })
+      });
 
       // Login to get token
       const loginResponse = await payload.login({
@@ -89,32 +95,32 @@ describe('Users Collection Integration', () => {
           email: 'me-endpoint@example.com',
           password: TEST_PASSWORD,
         },
-      })
+      });
 
       // Use payload's findMe method instead of the API endpoint
       const me = await payload.findByID({
         collection: 'users',
         id: loginResponse.user.id,
-      })
+      });
 
-      expect(me).toBeDefined()
-      expect(me.email).toBe('me-endpoint@example.com')
-    })
+      expect(me).toBeDefined();
+      expect(me.email).toBe('me-endpoint@example.com');
+    });
 
     it('should require authentication for protected operations', async () => {
       // Try to find all users without authentication
       // This should still work but return only public fields
       const result = await payload.find({
         collection: 'users',
-      })
+      });
 
-      expect(result.docs).toBeDefined()
-      expect(Array.isArray(result.docs)).toBe(true)
+      expect(result.docs).toBeDefined();
+      expect(Array.isArray(result.docs)).toBe(true);
 
       // Ensure password is not returned
       if (result.docs.length > 0) {
-        expect(result.docs[0].password).toBeUndefined()
+        expect(result.docs[0].password).toBeUndefined();
       }
-    })
-  })
-})
+    });
+  });
+});
