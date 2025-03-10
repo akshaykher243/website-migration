@@ -1,43 +1,41 @@
 version: '3'
 
 services:
-  payload:
-    image: node:18-alpine
+  postgres:
+    image: postgres:15-alpine # AWS Aurora PostgreSQL compatible version
+    environment:
+      POSTGRES_DB: payload
+      POSTGRES_USER: payload
+      POSTGRES_PASSWORD: payload
     ports:
-      - '3000:3000'
+      - '5432:5432'
     volumes:
-      - .:/home/node/app
-      - node_modules:/home/node/app/node_modules
-    working_dir: /home/node/app/
-    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm dev"
-    depends_on:
-      - mongo
-      # - postgres
-    env_file:
-      - .env
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U payload']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payload-network
 
-  # Ensure your DATABASE_URI uses 'mongo' as the hostname ie. mongodb://mongo/my-db-name
-  mongo:
-    image: mongo:latest
+  adminer:
+    image: adminer
+    restart: always
     ports:
-      - '27017:27017'
-    command:
-      - --storageEngine=wiredTiger
-    volumes:
-      - data:/data/db
-    logging:
-      driver: none
+      - 8080:8080
 
-  # Uncomment the following to use postgres
-  # postgres:
-  #   restart: always
-  #   image: postgres:latest
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
+  localstack:
+    container_name: '${LOCALSTACK_DOCKER_NAME:-localstack-multi-tenancy}'
+    image: localstack/localstack-pro
+    ports:
+      - '4566:4566'
+    environment:
+      - PERSISTENCE=1
+    volumes:
+      - '${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack'
+      - ./scripts/localstack-init.sh:/docker-entrypoint-initaws.d/init.sh
 
 volumes:
-  data:
-  # pgdata:
+  postgres_data:
   node_modules:

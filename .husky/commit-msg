@@ -1,0 +1,11 @@
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+VALID_PREFIXES="^(feat|fix|resolve)(\([A-Za-z0-9-]+\))?: .+"
+if ! echo "$COMMIT_MSG" | grep -E "$VALID_PREFIXES" > /dev/null; then
+  echo "ERROR: Commit message must start with 'feat:', 'fix:', or 'resolve:', optionally with a scope like 'feat(<scope>):', followed by a space and description."
+  echo "Examples:"
+  echo "  - 'feat: add user authentication'"
+  echo "  - 'feat(PWB-02): implement eslint setup'"
+  echo "Your message was: '$COMMIT_MSG'"
+  exit 1
+fi
