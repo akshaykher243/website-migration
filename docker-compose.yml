@@ -1,43 +1,105 @@
-version: '3'
+version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine # AWS Aurora PostgreSQL compatible version
+    environment:
+      POSTGRES_DB: payload
+      POSTGRES_USER: payload
+      POSTGRES_PASSWORD: payload
+    ports:
+      - '5433:5432' # Changed from 5432:5432 to avoid conflict
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U payload']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payload-network
+
+  # Optional Payload service, enabled via ENABLE_PAYLOAD_SERVICE env var
   payload:
-    image: node:18-alpine
+    image: node:22.13.1-alpine
     ports:
       - '3000:3000'
     volumes:
       - .:/home/node/app
       - node_modules:/home/node/app/node_modules
     working_dir: /home/node/app/
-    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm dev"
+    command: sh -c "npm install && npm run dev"
     depends_on:
-      - mongo
-      # - postgres
+      postgres:
+        condition: service_healthy
     env_file:
       - .env
+    networks:
+      - payload-network
+    profiles:
+      - dev
 
-  # Ensure your DATABASE_URI uses 'mongo' as the hostname ie. mongodb://mongo/my-db-name
-  mongo:
-    image: mongo:latest
+  # localstack for s3 testing
+  localstack:
+    image: localstack/localstack:latest
     ports:
-      - '27017:27017'
-    command:
-      - --storageEngine=wiredTiger
+      - '4566:4566'
+      - '4510-4559:4510-4559' # external services port range
+    environment:
+      - SERVICES=s3
+      - DEBUG=${DEBUG:-0}
+      - PERSISTENCE=1 # Enable persistence
+      - SNAPSHOT_SAVE_STRATEGY=SCHEDULED # Default strategy
+      - SNAPSHOT_FLUSH_INTERVAL=15 # Default interval in seconds
+      - SNAPSHOT_LOAD_STRATEGY=ON_STARTUP # Load state on startup
+      - DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - AWS_DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - EDGE_PORT=4566
+      - DATA_DIR=/var/lib/localstack/data
     volumes:
-      - data:/data/db
-    logging:
-      driver: none
+      - ./scripts/localstack-init.sh:/docker-entrypoint-initaws.d/init.sh
+      - '${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack' # Persist state
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payload-network
 
-  # Uncomment the following to use postgres
-  # postgres:
-  #   restart: always
-  #   image: postgres:latest
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
+  adminer:
+    image: adminer
+    ports:
+      - '8080:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - payload-network
+
+  postgres_test:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: payload_test
+      POSTGRES_USER: payload
+      POSTGRES_PASSWORD: payload
+    ports:
+      - '5434:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U payload']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payload-network
+
+networks:
+  payload-network:
+    driver: bridge
 
 volumes:
-  data:
-  # pgdata:
+  postgres_data:
   node_modules:
