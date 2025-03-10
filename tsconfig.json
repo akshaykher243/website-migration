@@ -3,24 +3,22 @@
     "target": "es2017",
     "module": "ESNext",
     "moduleResolution": "node",
-    "lib": [
-      "es2017",
-      "dom"
-    ],
+    "lib": ["es2017", "dom"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": [
-      "jest",
-      "node"
-    ],
+    "types": ["jest", "node"],
     "isolatedModules": true,
     "allowJs": true,
     "resolveJsonModule": true,
     "noEmit": true,
     "incremental": true,
     "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@payload-config": ["src/payload.config.ts"]
+    },
     "plugins": [
       {
         "name": "next"
@@ -33,7 +31,5 @@
     "tests/**/*",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
