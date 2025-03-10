@@ -16,7 +16,7 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'integration-test@example.com',
-          password: 'Password123!',
+          password: 'mypassword',
         },
       })
 
@@ -28,7 +28,7 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'integration-test@example.com',
-          password: 'Password123!',
+          password: 'mypassword',
         },
       })
 
@@ -42,7 +42,7 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'wrong-pass@example.com',
-          password: 'Password123!',
+          password: 'mypassword',
         },
       })
 
@@ -52,7 +52,7 @@ describe('Users Collection Integration', () => {
           collection: 'users',
           data: {
             email: 'wrong-pass@example.com',
-            password: 'WrongPassword123!',
+            password: 'wrongmypassword',
           },
         })
       ).rejects.toThrow()
@@ -66,7 +66,7 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'me-endpoint@example.com',
-          password: 'Password123!',
+          password: 'mypassword',
         },
       })
 
@@ -75,7 +75,7 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'me-endpoint@example.com',
-          password: 'Password123!',
+          password: 'mypassword',
         },
       })
 
