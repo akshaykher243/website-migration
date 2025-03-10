@@ -9,6 +9,8 @@ on:
 env:
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+  TEST_WRONG_PASSWORD: ${{ secrets.TEST_WRONG_PASSWORD }}
 
 jobs:
   build:
@@ -61,6 +63,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create test env file
+        run: |
+          echo "TEST_USER_PASSWORD=${{ secrets.TEST_USER_PASSWORD }}" >> .env.test
+          echo "TEST_WRONG_PASSWORD=${{ secrets.TEST_WRONG_PASSWORD }}" >> .env.test
+
       - name: Run integration tests
         run: npm run test:integration
 
@@ -75,4 +82,5 @@ jobs:
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}

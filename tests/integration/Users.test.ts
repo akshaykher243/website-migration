@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach } from '@jest/globals'
 import { getPayload } from '../helpers/getPayload'
 import { Payload } from 'payload'
+import dotenv from 'dotenv'
+
+// Load test environment variables
+dotenv.config({ path: '.env.test' })
+
+const TEST_PASSWORD = process.env.TEST_USER_PASSWORD || 'defaultTestPass123!'
+const WRONG_PASSWORD = process.env.TEST_WRONG_PASSWORD || 'defaultWrongPass123!'
 
 describe('Users Collection Integration', () => {
   let payload: Payload
@@ -16,7 +23,7 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'integration-test@example.com',
-          password: 'mypassword',
+          password: TEST_PASSWORD,
         },
       })
 
@@ -28,7 +35,7 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'integration-test@example.com',
-          password: 'mypassword',
+          password: TEST_PASSWORD,
         },
       })
 
@@ -42,20 +49,25 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'wrong-pass@example.com',
-          password: 'mypassword',
+          password: TEST_PASSWORD,
         },
       })
 
       // Attempt login with wrong password
-      await expect(
-        payload.login({
+      try {
+        await payload.login({
           collection: 'users',
           data: {
             email: 'wrong-pass@example.com',
-            password: 'wrongmypassword',
+            password: WRONG_PASSWORD,
           },
         })
-      ).rejects.toThrow()
+        throw new Error('Login should have failed but succeeded')
+      } catch (error: any) {
+        expect(error.message).toContain(
+          'The email or password provided is incorrect.'
+        )
+      }
     })
   })
 
@@ -66,7 +78,7 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'me-endpoint@example.com',
-          password: 'mypassword',
+          password: TEST_PASSWORD,
         },
       })
 
@@ -75,7 +87,7 @@ describe('Users Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'me-endpoint@example.com',
-          password: 'mypassword',
+          password: TEST_PASSWORD,
         },
       })
 

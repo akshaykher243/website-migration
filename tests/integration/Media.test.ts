@@ -30,7 +30,7 @@ describe('Media Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'media-test@example.com',
-          password: 'mypassword',
+          password: `${process.env.PASSWORD}`,
         },
       })
 
@@ -39,7 +39,7 @@ describe('Media Collection Integration', () => {
         collection: 'users',
         data: {
           email: 'media-test@example.com',
-          password: 'mypassword',
+          password: `${process.env.PASSWORD}`,
         },
       })
 
