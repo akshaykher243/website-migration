@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   postgres:
@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: payload
       POSTGRES_PASSWORD: payload
     ports:
-      - '5432:5432'
+      - '5433:5432' # Changed from 5432:5432 to avoid conflict
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,22 +19,86 @@ services:
     networks:
       - payload-network
 
-  adminer:
-    image: adminer
-    restart: always
+  # Optional Payload service, enabled via ENABLE_PAYLOAD_SERVICE env var
+  payload:
+    image: node:22.13.1-alpine
     ports:
-      - 8080:8080
+      - '3000:3000'
+    volumes:
+      - .:/home/node/app
+      - node_modules:/home/node/app/node_modules
+    working_dir: /home/node/app/
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - payload-network
+    profiles:
+      - dev
 
+  # localstack for s3 testing
   localstack:
-    container_name: '${LOCALSTACK_DOCKER_NAME:-localstack-multi-tenancy}'
-    image: localstack/localstack-pro
+    image: localstack/localstack:latest
     ports:
       - '4566:4566'
+      - '4510-4559:4510-4559' # external services port range
     environment:
-      - PERSISTENCE=1
+      - SERVICES=s3
+      - DEBUG=${DEBUG:-0}
+      - PERSISTENCE=1 # Enable persistence
+      - SNAPSHOT_SAVE_STRATEGY=SCHEDULED # Default strategy
+      - SNAPSHOT_FLUSH_INTERVAL=15 # Default interval in seconds
+      - SNAPSHOT_LOAD_STRATEGY=ON_STARTUP # Load state on startup
+      - DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - AWS_DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - EDGE_PORT=4566
+      - DATA_DIR=/var/lib/localstack/data
     volumes:
-      - '${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack'
       - ./scripts/localstack-init.sh:/docker-entrypoint-initaws.d/init.sh
+      - '${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack' # Persist state
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payload-network
+
+  adminer:
+    image: adminer
+    ports:
+      - '8080:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - payload-network
+
+  postgres_test:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: payload_test
+      POSTGRES_USER: payload
+      POSTGRES_PASSWORD: payload
+    ports:
+      - '5434:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U payload']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payload-network
+
+networks:
+  payload-network:
+    driver: bridge
 
 volumes:
   postgres_data:

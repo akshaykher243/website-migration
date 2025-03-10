@@ -29,6 +29,6 @@
     },
     "eslint.run": "onSave",
     "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": true
+      "source.fixAll.eslint": "explicit"
     }
 }
