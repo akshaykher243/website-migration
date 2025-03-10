@@ -11,8 +11,12 @@
     "generate:importmap": "cross-env payload generate:importmap",
     "generate:types": "cross-env payload generate:types",
     "lint": "cross-env next lint",
+    "lint:fix": "cross-env next lint --fix",
+    "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,css,md}'",
+    "lint-staged": "lint-staged",
     "payload": "cross-env payload",
-    "start": "cross-env next start"
+    "start": "cross-env next start",
+    "prepare": "husky"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.27.0",
@@ -28,12 +32,19 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/node": "^22.5.4",
     "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
-    "eslint": "^9.16.0",
+    "@typescript-eslint/eslint-plugin": "^8.26.0",
+    "@typescript-eslint/parser": "^8.26.0",
+    "eslint": "^9.22.0",
     "eslint-config-next": "15.1.5",
-    "prettier": "^3.4.2",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.3",
     "typescript": "5.7.3"
   },
   "engines": {
@@ -43,6 +54,17 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "sharp"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
     ]
   }
 }
